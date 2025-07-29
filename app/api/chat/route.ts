@@ -5,11 +5,7 @@ import { z } from 'zod';
 import { findRelevantContent } from '@/lib/ai/embedding';
 import { updateCurrentChunks } from '../get-current-chunks/route';
 
-// Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
-
-// Global storage for last retrieved chunks (in production, use Redis or database)
-let lastRetrievedChunks: any[] = [];
 
 export async function POST(req: Request) {
   const { messages, model = 'gpt-4.1-2025-04-14', systemPrompt } = await req.json();
@@ -26,7 +22,7 @@ export async function POST(req: Request) {
 IMPORTANT INSTRUCTIONS:
 1. When a user asks a question, ALWAYS use the getInformation tool first to search your knowledge base
 2. Only answer questions using information found in your knowledge base
-3. If no relevant information is found, respond with "Sorry, I don't have information about that in my knowledge base."
+3. If no relevant information is found, respond with "Sorry, I don&apos;t have information about that in my knowledge base."
 4. When you find relevant information, provide detailed, helpful answers based on that information
 5. For database questions, provide specific SQL examples when possible
 6. Always cite the source of your information when possible
@@ -61,8 +57,7 @@ Your knowledge base contains database schema documentation, table definitions, a
           console.log('Searching knowledge base for:', question);
           const results = await findRelevantContent(question);
           
-          // Store the chunks globally for immediate access
-          lastRetrievedChunks = results;
+          // Store the chunks for immediate access
           updateCurrentChunks(results);
           
           console.log('Retrieved content:', {
@@ -79,7 +74,4 @@ Your knowledge base contains database schema documentation, table definitions, a
   });
 
   return result.toDataStreamResponse();
-}
-
-// Export function to get last retrieved chunks
-export { lastRetrievedChunks }; 
+} 
