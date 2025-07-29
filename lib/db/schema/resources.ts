@@ -1,20 +1,16 @@
 import { sql } from "drizzle-orm";
-import { text, varchar, timestamp, pgTable } from "drizzle-orm/pg-core";
+import { text, varchar, timestamp, pgTable, serial, integer } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { nanoid } from "@/lib/utils";
-
 export const resources = pgTable("resources", {
-  id: varchar("id", { length: 191 })
-    .primaryKey()
-    .$defaultFn(() => nanoid()),
-  content: text("content").notNull(),
-
-  createdAt: timestamp("created_at")
-    .notNull()
-    .default(sql`now()`),
-  updatedAt: timestamp("updated_at")
+  id: serial("id").primaryKey(),
+  file_name: varchar("file_name", { length: 255 }).notNull(),
+  file_type: varchar("file_type", { length: 100 }).notNull(),
+  file_size: integer("file_size").notNull(),
+  chunk_count: integer("chunk_count").notNull(),
+  storage_path: text("storage_path").notNull(),
+  created_at: timestamp("created_at")
     .notNull()
     .default(sql`now()`),
 });
@@ -24,8 +20,7 @@ export const insertResourceSchema = createSelectSchema(resources)
   .extend({})
   .omit({
     id: true,
-    createdAt: true,
-    updatedAt: true,
+    created_at: true,
   });
 
 // Type for resources - used to type API request params and within Components
