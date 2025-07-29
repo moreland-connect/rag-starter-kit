@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Download, Copy, Search } from 'lucide-react';
 
@@ -25,13 +25,7 @@ export default function DocumentViewer({ fileName, highlightText, isVisible, onC
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState(highlightText || '');
 
-  useEffect(() => {
-    if (isVisible && fileName) {
-      loadDocument();
-    }
-  }, [isVisible, fileName]);
-
-  const loadDocument = async () => {
+  const loadDocument = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -54,7 +48,13 @@ export default function DocumentViewer({ fileName, highlightText, isVisible, onC
     } finally {
       setLoading(false);
     }
-  };
+  }, [fileName]);
+
+  useEffect(() => {
+    if (isVisible && fileName) {
+      loadDocument();
+    }
+  }, [isVisible, fileName, loadDocument]);
 
   const highlightTextInContent = (content: string, searchTerm: string) => {
     if (!searchTerm) return content;

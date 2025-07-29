@@ -26,7 +26,7 @@ export default function Chat() {
 IMPORTANT INSTRUCTIONS:
 1. When a user asks a question, ALWAYS use the getInformation tool first to search your knowledge base
 2. Only answer questions using information found in your knowledge base
-3. If no relevant information is found, respond with "Sorry, I don't have information about that in my knowledge base."
+3. If no relevant information is found, respond with "Sorry, I don&apos;t have information about that in my knowledge base."
 4. When you find relevant information, provide detailed, helpful answers based on that information
 5. For database questions, provide specific SQL examples when possible
 6. Always cite the source of your information when possible
@@ -52,9 +52,11 @@ Your knowledge base contains database schema documentation, table definitions, a
 
   // Poll for chunks while loading
   useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
     if (isLoading && lastQuery) {
       // Start polling for chunks
-      const interval = setInterval(async () => {
+      interval = setInterval(async () => {
         try {
           const response = await fetch('/api/get-current-chunks', {
             method: 'GET'
@@ -85,11 +87,11 @@ Your knowledge base contains database schema documentation, table definitions, a
 
     // Cleanup on unmount
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
+      if (interval) {
+        clearInterval(interval);
       }
     };
-  }, [isLoading, lastQuery]);
+  }, [isLoading, lastQuery]); // pollingInterval intentionally excluded to avoid infinite loops
 
   // Track loading state changes and fetch chunks when loading finishes (fallback)
   useEffect(() => {
