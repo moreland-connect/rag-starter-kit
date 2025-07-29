@@ -39,7 +39,6 @@ Your knowledge base contains database schema documentation, table definitions, a
   const [showCitations, setShowCitations] = useState(false);
   const [lastQuery, setLastQuery] = useState<string>('');
   const [wasLoading, setWasLoading] = useState(false);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
@@ -75,14 +74,6 @@ Your knowledge base contains database schema documentation, table definitions, a
           console.error('Polling error:', error);
         }
       }, 500); // Poll every 500ms
-      
-      setPollingInterval(interval);
-    } else {
-      // Clear polling when not loading
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-        setPollingInterval(null);
-      }
     }
 
     // Cleanup on unmount
@@ -177,7 +168,7 @@ Your knowledge base contains database schema documentation, table definitions, a
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
                   <p>Start a conversation by asking a question about your documents.</p>
-                  <p className="text-sm mt-2">Make sure you've ingested some documents first!</p>
+                  <p className="text-sm mt-2">Make sure you&apos;ve ingested some documents first!</p>
                 </div>
               ) : (
                 messages.map(m => (
