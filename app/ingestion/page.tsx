@@ -5,6 +5,7 @@ import FileUpload from '@/components/FileUpload';
 import BucketIngest from '@/components/BucketIngest';
 import BucketIngestButton from '@/components/BucketIngestButton';
 import ClearDataButton from '@/components/ClearDataButton';
+import DocumentManager from '@/components/DocumentManager';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -33,6 +34,11 @@ export default function IngestionPage() {
               <p className="text-gray-600">Upload and manage your knowledge base documents</p>
             </div>
           </div>
+        </div>
+
+        {/* Document Management Section */}
+        <div className="mb-8">
+          <DocumentManager onResult={handleIngestionResult} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

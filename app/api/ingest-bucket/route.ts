@@ -11,9 +11,44 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const { bucketName = 'docs' } = await request.json();
+    const { bucketName = 'docs', fileName } = await request.json();
 
-    console.log(`Starting ingestion from bucket: ${bucketName}`);
+    console.log(`Starting ingestion from bucket: ${bucketName}${fileName ? ` for file: ${fileName}` : ''}`);
+    
+    // If a specific file is requested, process only that file
+    if (fileName) {
+      console.log(`Processing single file: ${fileName}`);
+      
+      // Check if file exists
+      const { data: fileExists } = await supabase.storage
+        .from(bucketName)
+        .list('', {
+          search: fileName
+        });
+
+      if (!fileExists || !fileExists.find(f => f.name === fileName)) {
+        return NextResponse.json({ 
+          error: `File "${fileName}" not found in bucket "${bucketName}"` 
+        }, { status: 404 });
+      }
+
+      // Process the single file
+      const result = await processSingleFile(bucketName, fileName);
+      
+      if (typeof result === 'string' && result.includes('successfully')) {
+        return NextResponse.json({ 
+          message: `Successfully processed ${fileName}`,
+          results: [{ file: fileName, success: true, message: result }],
+          summary: { total: 1, successful: 1, failed: 0 }
+        });
+      } else {
+        return NextResponse.json({ 
+          error: result || 'Failed to process file',
+          results: [{ file: fileName, success: false, error: result }],
+          summary: { total: 1, successful: 0, failed: 1 }
+        }, { status: 500 });
+      }
+    }
     
     // List all files in the bucket
     const { data: files, error } = await supabase.storage
@@ -142,5 +177,56 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` 
     }, { status: 500 });
+  }
+}
+
+async function processSingleFile(bucketName: string, fileName: string) {
+  try {
+    console.log(`Processing file: ${fileName}`);
+
+    // Download the file from storage
+    const { data, error: downloadError } = await supabase.storage
+      .from(bucketName)
+      .download(fileName);
+
+    if (downloadError) {
+      console.error(`Error downloading ${fileName}:`, downloadError);
+      return `Error downloading ${fileName}: ${downloadError.message}`;
+    }
+
+    if (!data) {
+      return `No data found for ${fileName}`;
+    }
+
+    // Convert blob to text
+    const content = await data.text();
+    
+    if (!content.trim()) {
+      return `File ${fileName} is empty`;
+    }
+
+    // Determine file type from extension
+    const fileExtension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+    let fileType = 'text/plain';
+    
+    if (fileExtension === '.md') {
+      fileType = 'text/markdown';
+    } else if (fileExtension === '.json') {
+      fileType = 'application/json';
+    }
+
+    // Create resource with the content
+    const result = await createResource({
+      content,
+      fileName,
+      fileType,
+    });
+
+    console.log(`Successfully processed ${fileName}`);
+    return result;
+
+  } catch (error) {
+    console.error(`Error processing ${fileName}:`, error);
+    return `Error processing ${fileName}: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
 } 
