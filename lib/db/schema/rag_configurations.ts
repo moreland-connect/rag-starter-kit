@@ -29,8 +29,8 @@ export const ragConfigurations = pgTable("rag_configurations", {
 // Schema for creating new RAG configurations
 export const insertRagConfigurationSchema = createSelectSchema(ragConfigurations)
   .extend({
-    temperature: z.number().min(0).max(2).optional(),
-    similarity_threshold: z.number().min(0).max(1).optional(),
+    temperature: z.number().min(0).max(2).optional().transform(val => val?.toString()),
+    similarity_threshold: z.number().min(0).max(1).optional().transform(val => val?.toString()),
   })
   .omit({
     id: true,

@@ -46,7 +46,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }));
 
       // Validate chunk data
-      const validatedChunks = chunkData.map(chunk => insertMessageChunkSchema.parse(chunk));
+      const validatedChunks = chunkData.map((chunk: any) => insertMessageChunkSchema.parse(chunk));
 
       // Insert chunks
       await db

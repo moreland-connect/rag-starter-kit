@@ -33,7 +33,7 @@ export const insertMessageSchema = createSelectSchema(messages)
   .extend({
     role: z.enum(["user", "assistant", "system"]),
     sequence_number: z.number().positive(),
-    relevance_score: z.number().min(0).max(1).optional(),
+    relevance_score: z.number().min(0).max(1).optional().transform(val => val?.toString()),
   })
   .omit({
     id: true,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, messageFeedback, insertMessageFeedbackSchema, messages, conversations } from '@/lib/db';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 interface RouteParams {
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       await db
         .update(conversations)
         .set({
-          positive_feedback: conversations.positive_feedback + 1,
+          positive_feedback: sql`${conversations.positive_feedback} + 1`,
           updated_at: new Date()
         })
         .where(eq(conversations.id, message.conversation_id));
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       await db
         .update(conversations)
         .set({
-          negative_feedback: conversations.negative_feedback + 1,
+          negative_feedback: sql`${conversations.negative_feedback} + 1`,
           updated_at: new Date()
         })
         .where(eq(conversations.id, message.conversation_id));

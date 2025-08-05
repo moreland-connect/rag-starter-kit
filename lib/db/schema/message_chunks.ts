@@ -19,7 +19,7 @@ export const messageChunks = pgTable("message_chunks", {
 // Schema for creating new message chunks
 export const insertMessageChunkSchema = createSelectSchema(messageChunks)
   .extend({
-    similarity_score: z.number().min(0).max(1),
+    similarity_score: z.number().min(0).max(1).transform(val => val.toString()),
     chunk_rank: z.number().positive(),
   })
   .omit({

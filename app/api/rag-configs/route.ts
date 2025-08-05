@@ -11,13 +11,11 @@ export async function GET(request: NextRequest) {
 
     console.log('Fetching RAG configurations:', { activeOnly });
 
-    let query = db.select().from(ragConfigurations);
-
-    if (activeOnly) {
-      query = query.where(eq(ragConfigurations.is_active, true));
-    }
-
-    const configs = await query.orderBy(desc(ragConfigurations.is_default), desc(ragConfigurations.created_at));
+    const configs = await db
+      .select()
+      .from(ragConfigurations)
+      .where(activeOnly ? eq(ragConfigurations.is_active, true) : undefined)
+      .orderBy(desc(ragConfigurations.is_default), desc(ragConfigurations.created_at));
 
     console.log(`Found ${configs.length} RAG configurations`);
 
