@@ -28,4 +28,10 @@ export const db = drizzle(client);
 // Export schemas
 export * from "./schema/resources";
 export * from "./schema/embeddings";
+export * from "./schema/rag_configurations";
+export * from "./schema/conversations";
+export * from "./schema/messages";
+export * from "./schema/message_chunks";
+export * from "./schema/message_feedback";
+export * from "./schema/embedding_versions";
 
