@@ -10,7 +10,7 @@ export const ragConfigurations = pgTable("rag_configurations", {
   
   // System Prompt Settings
   system_prompt: text("system_prompt").notNull(),
-  model: varchar("model", { length: 100 }).notNull().default("gpt-4o-mini"),
+  model: varchar("model", { length: 100 }).notNull().default("o4-mini"),
   
   // RAG Settings
   temperature: decimal("temperature", { precision: 3, scale: 2 }).default("0.7"),

@@ -42,21 +42,8 @@ interface ExtendedMessage {
 }
 
 export default function Chat() {
-  const [settings, setSettings] = useState({
-    model: 'gpt-4.1-2025-04-14',
-    systemPrompt: `You are a helpful assistant with access to a knowledge base of database documentation and schema information.
-
-IMPORTANT INSTRUCTIONS:
-1. When a user asks a question, ALWAYS use the getInformation tool first to search your knowledge base
-2. Only answer questions using information found in your knowledge base
-3. If no relevant information is found, respond with "Sorry, I don&apos;t have information about that in my knowledge base."
-4. When you find relevant information, provide detailed, helpful answers based on that information
-5. For database questions, provide specific SQL examples when possible
-6. Always cite the source of your information when possible
-7. If the user asks about joining tables, look for information about the specific tables and their relationship keys
-
-Your knowledge base contains database schema documentation, table definitions, and relationship information. Use the getInformation tool to search through them before answering any questions.`
-  });
+  const [defaultRagConfig, setDefaultRagConfig] = useState<any>(null);
+  const [ragConfigLoading, setRagConfigLoading] = useState(true);
 
   const [retrievedChunks, setRetrievedChunks] = useState<ChunkData[]>([]);
   const [showCitations, setShowCitations] = useState(false);
@@ -69,12 +56,33 @@ Your knowledge base contains database schema documentation, table definitions, a
   const [currentMessageChunks, setCurrentMessageChunks] = useState<any[]>([]);
   const [chatHistoryRefreshTrigger, setChatHistoryRefreshTrigger] = useState(0);
 
+  // Load default RAG configuration on startup
+  useEffect(() => {
+    const loadDefaultRagConfig = async () => {
+      try {
+        setRagConfigLoading(true);
+        const response = await fetch('/api/rag-configs?activeOnly=true');
+        const data = await response.json();
+        
+        if (data.success && data.configurations.length > 0) {
+          const defaultConfig = data.configurations.find((c: any) => c.is_default) || data.configurations[0];
+          setDefaultRagConfig(defaultConfig);
+        }
+      } catch (error) {
+        console.error('Failed to load default RAG config:', error);
+      } finally {
+        setRagConfigLoading(false);
+      }
+    };
+
+    loadDefaultRagConfig();
+  }, []);
+
   const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
     api: '/api/chat',
     maxSteps: 3,
     body: {
-      model: settings.model,
-      systemPrompt: settings.systemPrompt,
+      ragConfigId: defaultRagConfig?.id,
       conversationId: currentConversation?.id,
       userId: userId,
     },
@@ -235,9 +243,7 @@ Your knowledge base contains database schema documentation, table definitions, a
     handleSubmit(e);
   };
 
-  const handleSettingsChange = (newSettings: { model: string; systemPrompt: string }) => {
-    setSettings(newSettings);
-  };
+
 
   const handleSelectConversation = async (conversation: Conversation) => {
     try {
@@ -303,6 +309,18 @@ Your knowledge base contains database schema documentation, table definitions, a
     setCurrentMessageChunks([]);
   };
 
+  // Show loading while RAG config is being loaded
+  if (ragConfigLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading configuration...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex">
       {/* Chat History Sidebar - Always visible like ChatGPT */}
@@ -343,6 +361,11 @@ Your knowledge base contains database schema documentation, table definitions, a
               <p className="text-sm text-gray-600">
                 Ask questions about your ingested documents
               </p>
+              {defaultRagConfig && (
+                <p className="text-xs text-blue-600 mt-1">
+                  Using: {defaultRagConfig.name} ({defaultRagConfig.model})
+                </p>
+              )}
             </div>
             
             <div className="flex gap-3">

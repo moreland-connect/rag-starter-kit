@@ -26,9 +26,9 @@ interface RagSettingsProps {
 
 const availableModels = [
   'gpt-4.1-2025-04-14',
-  'gpt-o3',
+  'o3',
   'gpt-4.1-mini',
-  'gpt-o4-mini'
+  'o4-mini'
 ];
 
 
@@ -129,7 +129,7 @@ export default function RagSettings({ onConfigChange }: RagSettingsProps) {
         <h2 className="text-2xl font-semibold mb-3">Configure Your RAG System</h2>
         <div className="space-y-2 text-sm text-gray-600">
           <p>• <strong>System Prompt:</strong> Define how the AI behaves and responds to queries</p>
-                     <p>• <strong>Model Selection:</strong> Choose your preferred LLM (4.1 = newest, o3 = reasoning, mini = economical)</p>
+                     <p>• <strong>Model Selection:</strong> Choose your preferred LLM (4.1 = newest GPT-4, o3 = reasoning, mini = economical)</p>
           <p>• <strong>Advanced Settings:</strong> Fine-tune response creativity and length</p>
           <p className="text-amber-600 font-medium mt-3">Note: RAG retrieval uses 6 chunks with 0.1 similarity threshold (hardcoded for now)</p>
         </div>
@@ -152,7 +152,7 @@ export default function RagSettings({ onConfigChange }: RagSettingsProps) {
       {/* Model Selection */}
       <div>
         <Label htmlFor="model" className="text-lg font-medium">Model</Label>
-                 <p className="text-sm text-gray-500 mb-3">Choose your preferred LLM model (4.1 = newest GPT-4, o3 = reasoning model, mini = economical options)</p>
+                 <p className="text-sm text-gray-500 mb-3">Choose your preferred LLM model (4.1 = newest GPT-4, o3 = reasoning, o4-mini/4.1-mini = economical)</p>
         <select
           id="model"
           value={localConfig.model || ''}
