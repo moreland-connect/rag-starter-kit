@@ -3,7 +3,7 @@ import { openai } from '@ai-sdk/openai';
 import { convertToCoreMessages, streamText, tool } from 'ai';
 import { z } from 'zod';
 import { findRelevantContent } from '@/lib/ai/embedding';
-import { updateCurrentChunks } from '../get-current-chunks/route';
+import { updateCurrentChunks } from '@/lib/shared/current-chunks';
 
 export const maxDuration = 30;
 
