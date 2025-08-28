@@ -1,0 +1,230 @@
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+  pull_request:
+    types: [opened]
+
+jobs:
+  claude:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude'))) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+      checks: read
+      statuses: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for better context
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          prompt: |
+            <system_role>
+            You are **Claude Code**, an experienced full-stack engineer working in the codebase associated with this pull request.
+
+            - You write clean, idiomatic back-end and front-end code.
+            - You follow this repository's conventions (see CLAUDE.md, .editorconfig, etc if they exist).
+            - You deliver production-ready solutions and comprehensive automated tests (if they exist in repository).
+            - Think through the requirements, approach, and potential impacts before implementing changes.
+            - Before emitting any `<tool_use>` block, wrap your step-by-step analysis inside a single `<thinking>` … `</thinking>` XML block. Skip the block only when the answer is obvious and no tool call is needed.
+            </system_role>
+
+            <coding_instructions>
+            1. Squash the placeholder commit ("chore: create PR with prompt instructions") with whatever commit changes you add into one commit.
+            2. Any conflict between the <linear_issue /> instructions and these <coding_instructions /> should be resolved in favor of <linear_issue />.
+            3. Implement the feature or fix described in <linear_issue />.
+            4. **When it adds value**, create or update unit and/or integration tests so coverage remains at or above the current baseline.
+            5. Update any affected documentation, comments, or sample configs if behavior changes.
+            6. Verify the project builds locally and that all CI checks pass.
+            7. Avoid hard-coded data or one-off shortcuts; deliver a maintainable, general solution.
+            8. It is expected that you will be able to make the subject changes, but if after multiple attempts you cannot you should still commit to PR branch and update the PR with your efforts and then explain what you tried and could not finish. This will enable other engineers to pick up where you left off.
+            9. If the repository does not already contain a `CLAUDE.md` file at its root, create one following the standard template and repository conventions.
+            10. Cite code with the format `<startLine>:<endLine>:<filepath>` inside fenced blocks so reviewers can locate changes quickly.
+            11. Prefer editing existing files over creating new ones; create a new file only when explicitly required by the Linear issue.
+            12. Keep assistant responses concise prose; avoid numbered or bullet lists unless the user explicitly requests them.
+            </coding_instructions>
+
+            <acceptance_criteria>
+            - [ ] **CI green:** All checks (build, lint, tests, etc) pass.
+            - [ ] **Quality gate:** No new static-analysis warnings or lint errors.
+            - [ ] **Traceability:** PR description references this Linear issue (LIN-{issue_id}) and includes a concise changelog.
+            - [ ] **Review:** At least one human reviewer approves before merge.
+            </acceptance_criteria>
+
+          additional_permissions: |
+            actions: read
+            checks: read
+            statuses: read
+
+          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
+          # model: "claude-opus-4-20250514"
+
+          # Optional: Customize the trigger phrase (default: @claude)
+          # trigger_phrase: "/claude"
+
+          # Optional: Trigger when specific user is assigned to an issue
+          # assignee_trigger: "claude-bot"
+
+          # Optional: Allow Claude to run specific commands
+          allowed_tools: "Bash(npm install), Bash(npm run build), Bash(npm run lint*), Bash(npm run test*), CodebaseSearch, CreateDiagram, DeleteFile, Edit, FetchPullRequest, FileSearch, Glob, Grep, HTTP(GET *), ListDir, MultiEdit, ReadFile, ReadLints, Replace, TodoWrite, UpdateMemory, WebSearch, WriteFile"
+
+          # Optional: Maximum number of conversation turns
+          max_turns: "100"
+
+          # Optional: Timeout in minutes for Claude Code execution
+          timeout_minutes: "30"
+
+  # TODO: Configure UI validations based on application-specific requirements such as accounting for auth, build & hosting processes, etc.
+  # claude-screenshots:
+  #   name: Claude UI Screenshots
+  #   needs: claude
+  #   if: |
+  #     (github.event_name == 'issue_comment' && contains(github.event.comment.body, 'screenshot')) ||
+  #     (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, 'screenshot'))
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #     pull-requests: write
+  #     issues: write
+  #     id-token: write
+  #     actions: read
+  #   steps:
+  #     - name: Checkout repository (updated branch)
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #         token: ${{ secrets.GITHUB_TOKEN }}
+
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+
+  #     - name: Build and start Next.js
+  #       env:
+  #         NEXTAUTH_URL: http://localhost:3000
+  #         CI: 'true'
+  #       run: |
+  #         npm ci
+  #         npm run build
+  #         npm run start & echo "SERVER_PID=$!" >> $GITHUB_ENV
+  #         # Wait for server to be ready
+  #         for i in {1..60}; do
+  #           if curl -fsS http://localhost:3000/ > /dev/null; then
+  #             echo "Server is up"
+  #             break
+  #           fi
+  #           sleep 1
+  #         done
+
+  #     - name: Run Claude Code (Action) with Screenshot Instructions
+  #       uses: anthropics/claude-code-action@beta
+  #       with:
+  #         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+  #         direct_prompt: |
+  #           ${{ github.event.comment.body || github.event.pull_request.body || github.event.issue.body || github.event.issue.title || 'Screenshots validation' }}
+
+  #           IMPORTANT: After making UI changes, please use the Puppeteer MCP server to take screenshots.
+
+  #           Available Puppeteer MCP tools:
+  #           - puppeteer_navigate: Navigate to http://localhost:3000
+  #           - puppeteer_screenshot: Take screenshots with different names/selectors
+  #           - puppeteer_click, puppeteer_hover: Test interactions before screenshots
+
+  #           Please:
+  #           1. Navigate to http://localhost:3000 after making changes
+  #           2. Take screenshots for desktop (width: 1920, height: 1080)
+  #           3. Take mobile screenshots (width: 375, height: 667) only if responsive changes are made
+  #           4. Name screenshots descriptively (e.g. 'desktop-homepage', 'mobile-navigation')
+  #         mcp_config: |
+  #           {
+  #             "mcpServers": {
+  #               "puppeteer": {
+  #                 "command": "npx",
+  #                 "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+  #                 "env": {
+  #                   "PUPPETEER_LAUNCH_OPTIONS": "{\"headless\": true, \"args\": [\"--no-sandbox\", \"--disable-setuid-sandbox\"]}",
+  #                   "ALLOW_DANGEROUS": "true"
+  #                 }
+  #               }
+  #             }
+  #           }
+  #         allowed_tools: "puppeteer_navigate, puppeteer_screenshot, puppeteer_click, puppeteer_hover"
+  #         max_turns: "50"
+  #         timeout_minutes: "20"
+
+  #     - name: Cleanup Server
+  #       if: always()
+  #       run: |
+  #         if [ -n "$SERVER_PID" ]; then
+  #           kill $SERVER_PID || true
+  #         fi
+
+  #     - name: Collect Screenshots
+  #       run: |
+  #         mkdir -p screenshots
+  #         # Collect any pngs created during run
+  #         find . -name "*.png" | head -20 | while read screenshot; do
+  #           cp "$screenshot" screenshots/ 2>/dev/null || true
+  #         done
+  #         echo "Screenshots found:"
+  #         ls -la screenshots/ || echo "No screenshots directory or files found"
+
+  #     - name: Upload Screenshots
+  #       uses: actions/upload-artifact@v4
+  #       if: hashFiles('screenshots/*.png') != ''
+  #       with:
+  #         name: claude-puppeteer-screenshots-${{ github.run_number }}
+  #         path: screenshots/
+  #         retention-days: 30
+
+  #     - name: Comment with artifact links
+  #       if: always()
+  #       uses: actions/github-script@v7
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         script: |
+  #           const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+  #           const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             run_id: context.runId,
+  #           });
+  #           const lines = [
+  #             `🖼️ Screenshots uploaded as artifacts.`,
+  #             ``,
+  #             `- Workflow run: ${runUrl}`,
+  #             `- Artifacts:`,
+  #             ...data.artifacts.map(a => `  - ${a.name}: https://api.github.com/repos/${context.repo.owner}/${context.repo.repo}/actions/artifacts/${a.id}/zip`)
+  #           ];
+  #           const issue_number = context.payload.issue?.number || context.payload.pull_request?.number;
+  #           if (issue_number) {
+  #             await github.rest.issues.createComment({
+  #               owner: context.repo.owner,
+  #               repo: context.repo.repo,
+  #               issue_number,
+  #               body: lines.join('\n'),
+  #             });
+  #           }
